@@ -1,8 +1,7 @@
  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
-
 import {
   getAuth,
-  signInWithEmailAndPassword,
+  signInAnonymously,
   onAuthStateChanged,
   signOut
 } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
@@ -26,18 +25,15 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// حساب صاحب المتجر فقط
-const OWNER_EMAIL = "samehshno4@gmail.com";
-
-const $ = s => document.querySelector(s);
-
 let products = [];
 let editing = null;
 
-function esc(v) {
-  return String(v ?? "").replace(
+const $ = (selector) => document.querySelector(selector);
+
+function esc(value) {
+  return String(value ?? "").replace(
     /[&<>"']/g,
-    m => ({
+    (m) => ({
       "&": "&amp;",
       "<": "&lt;",
       ">": "&gt;",
@@ -51,71 +47,79 @@ function render() {
   $("#count").textContent = products.length;
 
   $("#stock").textContent = products.reduce(
-    (a, p) => a + Number(p.stock || 0),
+    (total, product) => total + Number(product.stock || 0),
     0
   );
 
   $("#low").textContent = products.filter(
-    p => Number(p.stock || 0) < 5
+    (product) => Number(product.stock || 0) < 5
   ).length;
 
-  $("#rows").innerHTML = products.map(p => `
-    <tr>
-      <td>
-        <span class="product-name">${esc(p.name)}</span><br>
-        <span class="muted">${esc(p.description || "")}</span>
-      </td>
+  $("#rows").innerHTML = products
+    .map(
+      (product) => `
+      <tr>
+        <td>
+          <span class="product-name">${esc(product.name)}</span>
+          <br>
+          <span class="muted">${esc(product.description || "")}</span>
+        </td>
 
-      <td>${esc(p.category)}</td>
+        <td>${esc(product.category)}</td>
 
-      <td>
-        ${Number(p.price || 0).toLocaleString()} L.E
-      </td>
+        <td>
+          ${Number(product.price || 0).toLocaleString()} L.E
+        </td>
 
-      <td>${p.stock || 0}</td>
+        <td>${product.stock || 0}</td>
 
-      <td>
-        <span class="pill ${Number(p.stock || 0) < 5 ? "low" : ""}">
-          ${p.active ? "Active" : "Hidden"}
-        </span>
-      </td>
+        <td>
+          <span class="pill ${
+            Number(product.stock || 0) < 5 ? "low" : ""
+          }">
+            ${product.active ? "Active" : "Hidden"}
+          </span>
+        </td>
 
-      <td class="actions">
-        <button data-edit="${p.id}">Edit</button>
-        <button data-delete="${p.id}">Delete</button>
-      </td>
-    </tr>
-  `).join("");
+        <td class="actions">
+          <button data-edit="${product.id}">Edit</button>
+          <button data-delete="${product.id}">Delete</button>
+        </td>
+      </tr>
+    `
+    )
+    .join("");
 
-  document.querySelectorAll("[data-edit]").forEach(b => {
-    b.onclick = () => {
+  document.querySelectorAll("[data-edit]").forEach((button) => {
+    button.onclick = () => {
       const product = products.find(
-        p => p.id === b.dataset.edit
+        (p) => p.id === button.dataset.edit
       );
 
       openModal(product);
     };
   });
 
-  document.querySelectorAll("[data-delete]").forEach(b => {
-    b.onclick = () => removeProduct(b.dataset.delete);
+  document.querySelectorAll("[data-delete]").forEach((button) => {
+    button.onclick = () => removeProduct(button.dataset.delete);
   });
 }
 
-function openModal(p = null) {
-  editing = p?.id || null;
+function openModal(product = null) {
+  editing = product?.id || null;
 
-  $("#modalTitle").textContent =
-    p ? "Edit product" : "Add product";
+  $("#modalTitle").textContent = product
+    ? "Edit product"
+    : "Add product";
 
-  $("#pid").value = p?.id || "";
-  $("#pname").value = p?.name || "";
-  $("#price").value = p?.price ?? "";
-  $("#pstock").value = p?.stock ?? 0;
-  $("#category").value = p?.category || "Men";
-  $("#image").value = p?.image || "";
-  $("#description").value = p?.description || "";
-  $("#active").checked = p?.active ?? true;
+  $("#pid").value = product?.id || "";
+  $("#pname").value = product?.name || "";
+  $("#price").value = product?.price ?? "";
+  $("#pstock").value = product?.stock ?? 0;
+  $("#category").value = product?.category || "Men";
+  $("#image").value = product?.image || "";
+  $("#description").value = product?.description || "";
+  $("#active").checked = product?.active ?? true;
 
   $("#modal").classList.remove("hidden");
 }
@@ -123,210 +127,99 @@ function openModal(p = null) {
 async function removeProduct(id) {
   if (!confirm("Delete this product?")) return;
 
-  try {
-    await deleteDoc(doc(db, "products", id));
-  } catch (err) {
-    console.error(err);
-    alert("Could not delete product.");
-  }
+  await deleteDoc(doc(db, "products", id));
 }
 
 $("#addBtn").onclick = () => openModal();
 
-$("#close").onclick =
-$("#cancel").onclick = () => {
+$("#close").onclick = $("#cancel").onclick = () => {
   $("#modal").classList.add("hidden");
 };
 
+/*
+  DEMO MODE
+  Login is automatic using Firebase Anonymous Authentication.
+*/
 
-// ===============================
-// FIREBASE LOGIN
-// ===============================
-
-$("#loginForm").onsubmit = async e => {
-  e.preventDefault();
-
-  $("#loginError").textContent = "";
-
-  const email = $("#email").value.trim().toLowerCase();
-  const password = $("#password").value;
-
-  // السماح لصاحب المتجر فقط
-  if (email !== OWNER_EMAIL.toLowerCase()) {
-    $("#loginError").textContent =
-      "This account is not the store owner.";
-
-    return;
-  }
-
-  if (!password) {
-    $("#loginError").textContent =
-      "Enter your password.";
-
-    return;
-  }
-
+async function startDemoAdmin() {
   try {
-    const result = await signInWithEmailAndPassword(
-      auth,
-      email,
-      password
-    );
+    await signInAnonymously(auth);
+  } catch (error) {
+    console.error("Firebase anonymous login error:", error);
 
-    // حماية إضافية
-    if (
-      result.user.email?.toLowerCase() !==
-      OWNER_EMAIL.toLowerCase()
-    ) {
-      await signOut(auth);
-
+    if ($("#loginError")) {
       $("#loginError").textContent =
-        "Access denied.";
-    }
-
-  } catch (err) {
-    console.error("Firebase login error:", err);
-
-    if (
-      err.code === "auth/invalid-credential" ||
-      err.code === "auth/wrong-password" ||
-      err.code === "auth/user-not-found"
-    ) {
-      $("#loginError").textContent =
-        "Wrong email or password.";
-
-    } else if (err.code === "auth/too-many-requests") {
-
-      $("#loginError").textContent =
-        "Too many attempts. Try again later.";
-
-    } else {
-
-      $("#loginError").textContent =
-        "Firebase login error: " +
-        (err.code || "unknown error");
+        "Enable Anonymous sign-in in Firebase Authentication.";
     }
   }
-};
+}
 
+/* Hide normal login form */
+$("#login").classList.add("hidden");
 
-// ===============================
-// LOGOUT
-// ===============================
+/* Automatically login */
+startDemoAdmin();
 
+/* Logout */
 $("#logout").onclick = () => signOut(auth);
 
-
-// ===============================
-// PRODUCTS
-// ===============================
-
-$("#productForm").onsubmit = async e => {
-  e.preventDefault();
+/* Add / Edit product */
+$("#productForm").onsubmit = async (event) => {
+  event.preventDefault();
 
   const data = {
     name: $("#pname").value.trim(),
-
     price: Number($("#price").value),
-
     stock: Number($("#pstock").value),
-
     category: $("#category").value,
-
     image: $("#image").value.trim(),
-
     description: $("#description").value.trim(),
-
     active: $("#active").checked,
-
     updatedAt: serverTimestamp()
   };
 
-  try {
-
-    if (editing) {
-
-      await updateDoc(
-        doc(db, "products", editing),
-        data
-      );
-
-    } else {
-
-      await addDoc(
-        collection(db, "products"),
-        data
-      );
-    }
-
-    $("#modal").classList.add("hidden");
-
-  } catch (err) {
-
-    console.error(err);
-
-    alert(
-      "Could not save product: " +
-      (err.message || "Unknown error")
+  if (editing) {
+    await updateDoc(
+      doc(db, "products", editing),
+      data
+    );
+  } else {
+    await addDoc(
+      collection(db, "products"),
+      data
     );
   }
+
+  $("#modal").classList.add("hidden");
 };
 
-
-// ===============================
-// AUTH STATE
-// ===============================
-
-onAuthStateChanged(auth, user => {
-
-  // لو مفيش مستخدم أو المستخدم مش صاحب المتجر
-  if (
-    !user ||
-    user.email?.toLowerCase() !==
-    OWNER_EMAIL.toLowerCase()
-  ) {
-
-    if (user) {
-      signOut(auth);
-    }
-
-    $("#login").classList.remove("hidden");
+/* Firebase auth state */
+onAuthStateChanged(auth, (user) => {
+  if (!user) {
     $("#app").classList.add("hidden");
-
     return;
   }
 
-  // صاحب المتجر دخل بنجاح
   $("#login").classList.add("hidden");
   $("#app").classList.remove("hidden");
 
-
-  // ===============================
-  // REAL-TIME PRODUCTS
-  // ===============================
-
-  const q = query(
+  const productsQuery = query(
     collection(db, "products"),
     orderBy("updatedAt", "desc")
   );
 
   onSnapshot(
-    q,
-    snap => {
-
-      products = snap.docs.map(d => ({
-        id: d.id,
-        ...d.data()
+    productsQuery,
+    (snapshot) => {
+      products = snapshot.docs.map((document) => ({
+        id: document.id,
+        ...document.data()
       }));
 
       render();
     },
-
-    err => {
-      console.error(
-        "Firestore error:",
-        err
-      );
+    (error) => {
+      console.error("Firestore error:", error);
     }
   );
 });
