@@ -3,6 +3,7 @@ import {
   getFirestore, collection, query, where, orderBy, onSnapshot
 } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 import { firebaseConfig } from "./firebase-config.js";
+import { addToCart, updateCartBadge } from "./cart.js";
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
@@ -19,6 +20,14 @@ function esc(v) {
   }[m]));
 }
 
+function slug(name) {
+  return String(name || "product")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "") || "product";
+}
+
 function productCard(p) {
   const image = p.image || "";
   const price = Number(p.price || 0).toLocaleString();
@@ -27,8 +36,31 @@ function productCard(p) {
       <img src="${esc(image)}" alt="${esc(p.name)}">
       <h3>${esc(p.name)}</h3>
       <p>${price} L.E</p>
-      <button data-cart="${esc(p.id)}">Add to cart</button>
+      <button>Add to cart</button>
     </article>`;
+}
+
+// Wires every "Add to cart" button inside .card elements, whether the card
+// came from Firestore (#live-products) or is a static card in the page.
+// Reads name/price/image straight from the card at click time, so it always
+// reflects whatever is currently shown (including live price updates).
+function wireCartButtons(root) {
+  root.querySelectorAll(".card button:not([data-wired])").forEach(btn => {
+    btn.dataset.wired = "1";
+    btn.addEventListener("click", () => {
+      const card = btn.closest(".card");
+      if (!card) return;
+
+      const name = card.querySelector("h3")?.textContent?.trim() || "Product";
+      const priceText = card.querySelector("p")?.textContent || "0";
+      const price = Number(priceText.replace(/[^\d.]/g, "")) || 0;
+      const image = card.querySelector("img")?.getAttribute("src") || "";
+      const id = card.dataset.productId || slug(name);
+
+      addToCart({ id, name, price, image });
+      showToast("✓ Added to cart");
+    });
+  });
 }
 
 function renderProducts(products) {
@@ -37,9 +69,7 @@ function renderProducts(products) {
   const grid = document.querySelector("#live-products");
   if (grid) {
     grid.innerHTML = products.map(productCard).join("");
-    grid.querySelectorAll("[data-cart]").forEach(btn => {
-      btn.addEventListener("click", () => showToast("✓ Added to cart"));
-    });
+    wireCartButtons(grid);
     grid.querySelectorAll(".card").forEach(addReveal);
   } else {
     // Update existing static cards by matching product names.
@@ -53,6 +83,7 @@ function renderProducts(products) {
       const img = card.querySelector("img");
       if (img && p.image) img.src = p.image;
       card.dataset.stock = p.stock ?? 0;
+      card.dataset.productId = p.id;
     });
   }
 }
@@ -93,6 +124,11 @@ document.querySelectorAll('a[href^="#"]').forEach(a => {
     }
   });
 });
+
+// Wire any static "Add to cart" buttons immediately (works even before
+// Firestore data arrives) and show the current cart count in the navbar.
+wireCartButtons(document);
+updateCartBadge();
 
 onSnapshot(productsQuery, snap => {
   const products = snap.docs.map(d => ({ id: d.id, ...d.data() }));

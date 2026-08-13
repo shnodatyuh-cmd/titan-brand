@@ -26,6 +26,7 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 let products = [];
+let orders = [];
 let editing = null;
 
 const $ = (selector) => document.querySelector(selector);
@@ -102,6 +103,72 @@ function render() {
 
   document.querySelectorAll("[data-delete]").forEach((button) => {
     button.onclick = () => removeProduct(button.dataset.delete);
+  });
+}
+
+const STATUSES = ["pending", "confirmed", "delivered", "cancelled"];
+
+function fmtDate(ts) {
+  if (!ts?.toDate) return "—";
+  return ts.toDate().toLocaleString();
+}
+
+function renderOrders() {
+  const tbody = $("#orderRows");
+  if (!tbody) return;
+
+  $("#ordersSub").textContent =
+    `${orders.length} order${orders.length === 1 ? "" : "s"} · ${
+      orders.filter((o) => o.status === "pending").length
+    } pending`;
+
+  tbody.innerHTML = orders
+    .map((order) => {
+      const itemsText = (order.items || [])
+        .map((i) => `${esc(i.name)} ×${i.qty}`)
+        .join(", ");
+
+      const options = STATUSES.map(
+        (s) =>
+          `<option value="${s}" ${order.status === s ? "selected" : ""}>${s}</option>`
+      ).join("");
+
+      return `
+        <tr>
+          <td>
+            <span class="product-name">${esc(order.customer?.name)}</span>
+            <br>
+            <span class="muted">${esc(order.customer?.phone)} — ${esc(
+        order.customer?.address
+      )}</span>
+          </td>
+          <td class="muted">${itemsText}</td>
+          <td>${Number(order.total || 0).toLocaleString()} L.E</td>
+          <td>
+            <select data-status="${order.id}">${options}</select>
+          </td>
+          <td class="muted">${fmtDate(order.createdAt)}</td>
+          <td class="actions">
+            <button data-delete-order="${order.id}">Delete</button>
+          </td>
+        </tr>
+      `;
+    })
+    .join("");
+
+  tbody.querySelectorAll("[data-status]").forEach((select) => {
+    select.onchange = async () => {
+      await updateDoc(doc(db, "orders", select.dataset.status), {
+        status: select.value
+      });
+    };
+  });
+
+  tbody.querySelectorAll("[data-delete-order]").forEach((button) => {
+    button.onclick = async () => {
+      if (!confirm("Delete this order?")) return;
+      await deleteDoc(doc(db, "orders", button.dataset.deleteOrder));
+    };
   });
 }
 
@@ -220,6 +287,26 @@ onAuthStateChanged(auth, (user) => {
     },
     (error) => {
       console.error("Firestore error:", error);
+    }
+  );
+
+  const ordersQuery = query(
+    collection(db, "orders"),
+    orderBy("createdAt", "desc")
+  );
+
+  onSnapshot(
+    ordersQuery,
+    (snapshot) => {
+      orders = snapshot.docs.map((document) => ({
+        id: document.id,
+        ...document.data()
+      }));
+
+      renderOrders();
+    },
+    (error) => {
+      console.error("Firestore orders error:", error);
     }
   );
 });

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Cart — TITAN</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">
+            <h2>TITAN</h2>
+            <span>BRAND</span>
+        </div>
+        <ul>
+            <li><a href="index.html">HOME</a></li>
+            <li><a href="men.html">MEN</a></li>
+            <li><a href="women.html">WOMEN</a></li>
+            <li><a href="#contactme">CONTACT Me</a></li>
+            <li><a href="cart.html" class="cart-link"><i class="fa-solid fa-bag-shopping"></i><span id="cart-count">0</span></a></li>
+        </ul>
+    </nav>
+
+    <div class="cart-page">
+        <h1>Your Cart</h1>
+        <div id="cart-list" class="cart-list"></div>
+        <div id="cart-empty" class="cart-empty hidden">
+            Your cart is empty. <a href="shop.html">Go shopping →</a>
+        </div>
+        <div id="cart-summary" class="cart-summary hidden">
+            <div class="total">Total: <span id="cart-total">0 L.E</span></div>
+            <a href="checkout.html" class="btn-primary" id="checkout-btn">PROCEED TO CHECKOUT</a>
+        </div>
+    </div>
+
+    <footer>
+        <h2 id="contactme">Contact Me</h2>
+        <div class="social-icons">
+            <a href=" https://www.instagram.com/shnoda_sameh/" target="_blank">
+                <i class="fa-brands fa-instagram"></i>
+            </a>
+            <a href="mailto:shnodatyuh@gmail.com">
+                <i class="fa-solid fa-envelope"></i>
+            </a>
+            <a href="https://github.com/" target="_blank">
+                <i class="fa-brands fa-github"></i>
+            </a>
+        </div>
+        <p>© 2026 TITAN BRAND. All Rights Reserved.</p>
+    </footer>
+
+    <script type="module" src="cart-page.js"></script>
+</body>
+</html>

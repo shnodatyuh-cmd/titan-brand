@@ -1,4 +1,4 @@
- export const firebaseConfig = {
+export const firebaseConfig = {
   apiKey: "AIzaSyDIC_YxAHFrXoqF4lgQgtFTmp8rHdkRmv4",
   authDomain: "titan-brand.firebaseapp.com",
   projectId: "titan-brand",

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout — TITAN</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">
+            <h2>TITAN</h2>
+            <span>BRAND</span>
+        </div>
+        <ul>
+            <li><a href="index.html">HOME</a></li>
+            <li><a href="men.html">MEN</a></li>
+            <li><a href="women.html">WOMEN</a></li>
+            <li><a href="#contactme">CONTACT Me</a></li>
+            <li><a href="cart.html" class="cart-link"><i class="fa-solid fa-bag-shopping"></i><span id="cart-count">0</span></a></li>
+        </ul>
+    </nav>
+
+    <div class="checkout-page" id="checkout-view">
+        <h1>Checkout</h1>
+        <div class="checkout-grid">
+            <form id="checkoutForm" class="checkout-form">
+                <label>Full name
+                    <input id="c-name" required placeholder="Your name">
+                </label>
+                <label>Phone number
+                    <input id="c-phone" type="tel" required placeholder="01xxxxxxxxx">
+                </label>
+                <label>Delivery address
+                    <textarea id="c-address" rows="3" required placeholder="City, area, street, building..."></textarea>
+                </label>
+                <label>Notes (optional)
+                    <textarea id="c-notes" rows="2" placeholder="Anything we should know?"></textarea>
+                </label>
+                <div class="cod-note">Payment: Cash on Delivery only. You pay when your order arrives.</div>
+                <small id="checkoutError"></small>
+                <button class="btn-primary" id="placeOrderBtn" type="submit">PLACE ORDER — CASH ON DELIVERY</button>
+            </form>
+
+            <div class="order-summary">
+                <h3>Order summary</h3>
+                <div id="summary-rows"></div>
+                <div class="os-total">Total <span id="summary-total">0 L.E</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="order-confirm hidden" id="confirm-view">
+        <div class="ok-icon"><i class="fa-solid fa-circle-check"></i></div>
+        <h1>Order placed!</h1>
+        <p id="confirm-text">Thanks — we'll call you to confirm delivery. Pay cash when it arrives.</p>
+        <a href="index.html" class="btn-primary">BACK TO HOME</a>
+    </div>
+
+    <footer>
+        <h2 id="contactme">Contact Me</h2>
+        <div class="social-icons">
+            <a href=" https://www.instagram.com/shnoda_sameh/" target="_blank">
+                <i class="fa-brands fa-instagram"></i>
+            </a>
+            <a href="mailto:shnodatyuh@gmail.com">
+                <i class="fa-solid fa-envelope"></i>
+            </a>
+            <a href="https://github.com/" target="_blank">
+                <i class="fa-brands fa-github"></i>
+            </a>
+        </div>
+        <p>© 2026 TITAN BRAND. All Rights Reserved.</p>
+    </footer>
+
+    <script type="module" src="checkout.js"></script>
+</body>
+</html>

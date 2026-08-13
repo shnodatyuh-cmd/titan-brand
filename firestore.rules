@@ -2,14 +2,18 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    function isOwner() {
-      return request.auth != null
-        && request.auth.token.email == "samehshno4@gmail.com";
+    match /products/{productId} {
+      // أي حد داخل (حتى تسجيل anonymous اللي admin.js بيعمله تلقائي)
+      // يقدر يقرأ ويعدّل المنتجات - من غير باسورد أو إيميل محدد
+      allow read: if resource.data.active == true || request.auth != null;
+      allow create, update, delete: if request.auth != null;
     }
 
-    match /products/{productId} {
-      allow read: if resource.data.active == true || isOwner();
-      allow create, update, delete: if isOwner();
+    match /orders/{orderId} {
+      // أي زائر (من غير تسجيل دخول) يقدر يعمل أوردر من صفحة الـ checkout
+      allow create: if true;
+      // بس اللي داخل (الأدمن) هو اللي يقدر يشوف/يعدّل/يمسح الطلبات
+      allow read, update, delete: if request.auth != null;
     }
   }
 }
